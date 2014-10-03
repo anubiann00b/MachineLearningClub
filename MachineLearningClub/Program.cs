@@ -11,6 +11,7 @@ namespace MachineLearningClub
     {
         static void Main(string[] args)
         {
+            // These test cases suck btw
             double[][] input = new double[][]
             {
                 new double[]{1,1,0,1,1,0,1,0,1},
