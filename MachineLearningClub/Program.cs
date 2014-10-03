@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// COME TO MACHINE LEARNING CLUB IN O'BYRNE/THOMPSON ROOM ON
+// TUESDAYS AND THURSDAYS.
+
 namespace MachineLearningClub
 {
     /**
