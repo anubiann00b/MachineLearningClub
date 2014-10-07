@@ -21,15 +21,24 @@ namespace MachineLearningClub
             double[][] input = new double[][]
             {
                 // Each array is a test case with 'length' dimensions
-                new double[]{1,1,0,1,1,0,1,0,1},
-                new double[]{0,0,1,0,1,1,1,1,1},
+                new double[]{0.0},
+                new double[]{0.1},
+                new double[]{0.2},
+                new double[]{0.3},
+                new double[]{0.4},
+                new double[]{0.5},
+                new double[]{0.6},
+                new double[]{0.7},
+                new double[]{0.8},
+                new double[]{0.9},
+                new double[]{1.0},
             };
 
             // The expected output for each test case.
-            double[] output = new double[] { 1, 0 };
-
-            PerceptronNetwork network = new PerceptronNetwork(input[0].Length);
-            PerceptronTeacher teacher = new PerceptronTeacher(network, 0.05D);
+            double[] output = new double[] { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+            
+            NeuralNetwork network = new NeuralNetwork(input[0].Length, 5);
+            NetworkTrainer teacher = new NetworkTrainer(network, 0.05D);
 
             // Run the training 1000 times, since we don't have enough test cases.
             for (int x = 0; x < 1000; x++)
@@ -37,14 +46,44 @@ namespace MachineLearningClub
                 for (int i = 0; i < output.Length; i++)
                 {
                     double error = teacher.Teach(input[i], output[i]);
-                    Console.WriteLine(error);
+                    Console.WriteLine(Math.Round(error, 3) + "\t" + string.Join(",",network.HiddenOut));
                 }
+                Console.WriteLine();
             }
             
         }
     }
 
-    public class PerceptronNetwork
+    public class NeuralNetwork
+    {
+        public Neuron[] Hidden;
+        public Neuron Output;
+
+        public double[] HiddenOut;
+
+        private Random random = new Random();
+
+        public NeuralNetwork(int numIn, int numHidden)
+        {
+            HiddenOut = new double[numHidden];
+            this.Hidden = Enumerable.Range(0, numHidden)
+                .Select(x => new Neuron(numIn))
+                .ToArray();
+            this.Output = new Neuron(numHidden);
+        }
+
+        public double Compute(double[] input)
+        {
+            for (int i = 0; i < Hidden.Length; i++)
+            {
+                HiddenOut[i] = Hidden[i].Run(input);
+            }
+
+            return Output.Run(HiddenOut);
+        }
+    }
+
+    public class Neuron
     {
         // The number of inputs (dimension).
         public readonly int Inputs;
@@ -61,7 +100,7 @@ namespace MachineLearningClub
 
         private Random random = new Random();
 
-        public PerceptronNetwork(int inputs)
+        public Neuron(int inputs)
         {
             this.Inputs = inputs;
 
@@ -82,43 +121,52 @@ namespace MachineLearningClub
                 .Select(x => weights[x] * inp[x])
                 .Sum();
 
-            // Simple hedge (aka step) function.
-            if (sum > 0)
-            {
-                return 1;
-            }
-            return 0;
+            return Sigmoid(sum);
+        }
+
+        public static double Sigmoid(double d)
+        {
+            return 1 / Math.Exp(-d);
         }
     }
 
-    public class PerceptronTeacher
+    public class NetworkTrainer
     {
-        public PerceptronNetwork Network { get; private set; }
+        public NeuralNetwork Network { get; private set; }
 
         // Constant representing training speed.
         public double Alpha { get; set; }
 
-        public PerceptronTeacher(PerceptronNetwork network, double alpha)
+        public NetworkTrainer(NeuralNetwork network, double alpha)
         {
             this.Network = network;
             this.Alpha = alpha;
         }
 
-        public double Teach(double[] input, double output)
+        public double Teach(double[] input, double expectedOut)
         {
             // Keep track of the total error. Should be converging to a small value.
             double sum = 0;
 
             // Error = Expected - Actual
-            double error = output - this.Network.Run(input);
+            double error = expectedOut - this.Network.Compute(input);
 
             // Based on the error set new weights.
-            for (int i = 0; i < this.Network.Inputs; i++)
+            for (int i = 0; i < this.Network.Hidden.Length; i++)
             {
-                // Formula: new weight = old weight * alpha * input value
-                this.Network[i] += this.Alpha * error * input[i];
-                sum += error;
+                for (int j = 0; j < this.Network.Hidden[i].Inputs; j++)
+			    {
+                    // Formula: new weight = old weight * alpha * input value
+                    this.Network.Hidden[i][j] += this.Alpha * error * input[j];
+                    sum += error;
+			    }
             }
+
+            for (int i = 0; i < this.Network.Output.Inputs; i++)
+            {
+                this.Network.Output[i] += this.Alpha * error * Network.HiddenOut[i];
+            }
+
             return sum;
         }
     }
