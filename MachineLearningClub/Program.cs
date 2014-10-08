@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 // COME TO MACHINE LEARNING CLUB IN O'BYRNE/THOMPSON ROOM ON
 // TUESDAYS AND THURSDAYS.
+// http://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data
 
 namespace MachineLearningClub
 {
@@ -17,30 +19,44 @@ namespace MachineLearningClub
     {
         static void Main(string[] args)
         {
-            // Test cases (that are really bad).
-            double[][] input = new double[][]
+            double[][] input = new double[569][];
+            for (int x = 0; x < input.Length; x++)
             {
-                // Each array is a test case with 'length' dimensions
-                new double[]{1,1,0,1,1,0,1,0,1},
-                new double[]{0,0,1,0,1,1,1,1,1},
-            };
+                input[x] = new double[32];
+            }
 
             // The expected output for each test case.
-            double[] output = new double[] { 1, 0 };
+            double[] output = new double[569];
+            var data = File.ReadAllLines("TextFile1.txt")
+                .Select(x =>
+                {
+                    var left = x.Split(',').Skip(2).Select(y => double.Parse(y)).ToArray();
+                    var right = x.Split(',').Skip(1).First().First() == 'M' ? 0 : 1;
+                    return new { Data = left, Class = right };
+                })
+                .ToArray();
 
-            PerceptronNetwork network = new PerceptronNetwork(input[0].Length);
-            PerceptronTeacher teacher = new PerceptronTeacher(network, 0.05D);
+            PerceptronNetwork network = new PerceptronNetwork(data.First().Data.Length);
+            PerceptronTeacher teacher = new PerceptronTeacher(network, 0.0000005D);
 
             // Run the training 1000 times, since we don't have enough test cases.
             for (int x = 0; x < 1000; x++)
             {
-                for (int i = 0; i < output.Length; i++)
+                for (int i = 0; i < data.Length; i++)
                 {
-                    double error = teacher.Teach(input[i], output[i]);
-                    Console.WriteLine(error);
+                    double error = teacher.Teach(data[i].Data, data[i].Class);
                 }
+                var d = data.Select(xx =>
+                {
+                    var outP = network.Run(xx.Data);
+                    if (outP == xx.Class)
+                    {
+                        return 1;
+                    }
+                    return 0;
+                }).Sum();
+                Console.WriteLine((double)d / (double)data.Length);
             }
-            
         }
     }
 
